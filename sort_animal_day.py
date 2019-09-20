@@ -8,10 +8,8 @@
 
 # Spike sorting of one animal-day
 import os
-from mountaintools import client as mt
 import spikeextractors as se
 import spikeforest as sf
-import spikeforestsorters as sorters
 import ml_ms4alg
 import numpy as np
 import mlprocessors as mlpr
@@ -72,7 +70,7 @@ def main():
                 # grab the input file name that was parsed earlier
                 recording_file_in = ntrode['recording_file']
                 geom_in = ntrode['geom_file']
-                
+
                 print('Sorting...')
                 spike_sorting(
                     recording_file_in=recording_file_in,
@@ -199,11 +197,11 @@ class CustomSorting(mlpr.Processor):
 
             # Now represent the preprocessed recording using a RecordingExtractor
             recording = se.NumpyRecordingExtractor(X, samplerate=30000, geom=geom)
-            
+
 
             # hard-code this for now -- idea: run many simultaneous jobs, each using only 2 cores
             # important to set certain environment variables in the .sh script that calls this .py script
-            num_workers = 2  
+            num_workers = 2
 
             # Call MountainSort4
             sorting = ml_ms4alg.mountainsort4(
@@ -250,13 +248,13 @@ class CustomSorting(mlpr.Processor):
 
             # copy metrics.json to the output location
             shutil.copy(metrics_path, self.metrics_out)
-            
+
             print('Creating label map...')
-            label_map_path = tmpdir + '/label_map.mda' 
+            label_map_path = tmpdir + '/label_map.mda'
             create_label_map(metrics=metrics_path, label_map_out=label_map_path)
 
             print('Applying label map...')
-            apply_label_map(firings=self.firings_out, label_map=label_map_path, firings_out=self.firings_curated_out)        
+            apply_label_map(firings=self.firings_out, label_map=label_map_path, firings_out=self.firings_curated_out)
 
 def spike_sorting(*, recording_file_in, geom_in, firings_out, metrics_out, firings_curated_out, args):
     params = dict(

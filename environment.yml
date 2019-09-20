@@ -16,3 +16,4 @@ dependencies:
 - pip:
   - ml_ms4alg
   - spikeforest
+  - mountaintools

@@ -6,41 +6,51 @@
 # conda install -c flatiron mountainlab ml_ms3
 # caution: do not install ml_ms4alg from conda package - it conflicts with the pypi version
 
+import argparse
 # Spike sorting of one animal-day
 import os
-import spikeextractors as se
-import spikeforest as sf
-import ml_ms4alg
-import numpy as np
-import mlprocessors as mlpr
-import argparse
 import shutil
 
-from misc_utils import mkdir2, TemporaryDirectory, read_geom_csv
-from label_map import create_label_map, apply_label_map
+import numpy as np
+
+import ml_ms4alg
+import mlprocessors as mlpr
+import spikeextractors as se
+import spikeforest as sf
+from label_map import apply_label_map, create_label_map
+from misc_utils import TemporaryDirectory, mkdir2, read_geom_csv
 from shellscript import ShellScript
+
 
 def main():
     # command-line arguments
-    parser = argparse.ArgumentParser(description="Franklab spike sorting for a single animal day")
-    parser.add_argument('--input', help='The input directory containing the animal day ephys data', )
-    parser.add_argument('--output', help='The output directory where the sorting results will be written')
-    parser.add_argument('--num_jobs', help='Number of parallel jobs', required=False, default=1)
-    parser.add_argument('--force_run', help='Force the processing to run (no cache)', action='store_true')
-    parser.add_argument('--test', help='Only run 2 epochs and 2 ntrodes in each', action='store_true')
+    parser = argparse.ArgumentParser(
+        description="Franklab spike sorting for a single animal day")
+    parser.add_argument(
+        '--input', help='The input directory containing the animal day ephys data', )
+    parser.add_argument(
+        '--output', help='The output directory where the sorting results will be written')
+    parser.add_argument(
+        '--num_jobs', help='Number of parallel jobs', required=False, default=1)
+    parser.add_argument(
+        '--force_run', help='Force the processing to run (no cache)', action='store_true')
+    parser.add_argument(
+        '--test', help='Only run 2 epochs and 2 ntrodes in each', action='store_true')
     args = parser.parse_args()
 
     animal_day_path = args.input
     animal_day_output_path = args.output
 
     # parse the epoch names from the input directory
-    epoch_names = [name for name in sorted(os.listdir(animal_day_path)) if name.endswith('.mda')]
+    epoch_names = [name for name in sorted(
+        os.listdir(animal_day_path)) if name.endswith('.mda')]
     if args.test:
         # if we are testing, we only keep two of these
         epoch_names = epoch_names[0:2]
     # call load_epoch for each epoch name
     epochs = [
-        load_epoch(animal_day_path + '/' + name, name=name[0:-4], test=args.test)
+        load_epoch(animal_day_path + '/' + name,
+                   name=name[0:-4], test=args.test)
         for name in epoch_names
     ]
 
@@ -62,11 +72,16 @@ def main():
             for ntrode in epoch['ntrodes']:
                 print('PROCESSING NTRODE: {}'.format(ntrode['path']))
                 # make the output directory for the ntrode (if doesn't exist)
-                mkdir2(animal_day_output_path + '/' + epoch['name'] + '/' + ntrode['name'])
+                mkdir2(animal_day_output_path + '/' +
+                       epoch['name'] + '/' + ntrode['name'])
                 # define the names of the output files
-                firings_out = animal_day_output_path + '/' + epoch['name'] + '/' + ntrode['name'] + '/firings.mda'
-                metrics_out = animal_day_output_path + '/' + epoch['name'] + '/' + ntrode['name'] + '/metrics.json'
-                firings_curated_out = animal_day_output_path + '/' + epoch['name'] + '/' + ntrode['name'] + '/firings_curated.mda'
+                firings_out = animal_day_output_path + '/' + \
+                    epoch['name'] + '/' + ntrode['name'] + '/firings.mda'
+                metrics_out = animal_day_output_path + '/' + \
+                    epoch['name'] + '/' + ntrode['name'] + '/metrics.json'
+                firings_curated_out = animal_day_output_path + '/' + \
+                    epoch['name'] + '/' + ntrode['name'] + \
+                    '/firings_curated.mda'
                 # grab the input file name that was parsed earlier
                 recording_file_in = ntrode['recording_file']
                 geom_in = ntrode['geom_file']
@@ -78,9 +93,10 @@ def main():
                     firings_out=firings_out,
                     metrics_out=metrics_out,
                     firings_curated_out=firings_curated_out,
-                    args=args #  these are the command-line arguments
+                    args=args  # these are the command-line arguments
                 )
         JQ.wait()
+
 
 def load_ntrode(path, *, name):
     # use the .geom.csv if it exists (we assume path ends with .mda)
@@ -99,9 +115,11 @@ def load_ntrode(path, *, name):
         geom_file=geom_file
     )
 
+
 def load_epoch(path, *, name, test=False):
     # read the ntrode names
-    ntrode_names = [name for name in sorted(os.listdir(path)) if name.endswith('.mda')]
+    ntrode_names = [name for name in sorted(
+        os.listdir(path)) if name.endswith('.mda')]
     if test:
         # if we are testing, we only use the first 2
         ntrode_names = ntrode_names[0:2]
@@ -118,6 +136,8 @@ def load_epoch(path, *, name, test=False):
     )
 
 # This is a mountaintools processor
+
+
 class CustomSorting(mlpr.Processor):
     NAME = 'CustomSorting'
     VERSION = '0.1.7'  # the version can be incremented when the code inside run() changes
@@ -135,7 +155,7 @@ class CustomSorting(mlpr.Processor):
     samplerate = mlpr.FloatParameter("Sampling frequency")
 
     mask_out_artifacts = mlpr.BoolParameter(optional=True, default=False,
-                                description='Whether to mask out artifacts')
+                                            description='Whether to mask out artifacts')
     freq_min = mlpr.FloatParameter(
         optional=True, default=300, description='Use 0 for no bandpass filtering')
     freq_max = mlpr.FloatParameter(
@@ -175,7 +195,7 @@ class CustomSorting(mlpr.Processor):
 
             if self.whiten:
                 print('Whitening filt2 -> pre...')
-                _whiten(filt2,pre)
+                _whiten(filt2, pre)
             else:
                 pre = filt2
 
@@ -190,14 +210,15 @@ class CustomSorting(mlpr.Processor):
                 # no geom file was provided as input
                 num_channels = X.shape[0]
                 if num_channels > 6:
-                    raise Exception('For more than six channels, we require that a geom.csv be provided')
+                    raise Exception(
+                        'For more than six channels, we require that a geom.csv be provided')
                 # otherwise make a trivial geometry file
                 print('Making a trivial geom file.')
                 geom = np.zeros((X.shape[0], 2))
 
             # Now represent the preprocessed recording using a RecordingExtractor
-            recording = se.NumpyRecordingExtractor(X, samplerate=30000, geom=geom)
-
+            recording = se.NumpyRecordingExtractor(
+                X, samplerate=30000, geom=geom)
 
             # hard-code this for now -- idea: run many simultaneous jobs, each using only 2 cores
             # important to set certain environment variables in the .sh script that calls this .py script
@@ -216,7 +237,8 @@ class CustomSorting(mlpr.Processor):
 
             # Write the firings.mda
             print('Writing firings.mda...')
-            sf.SFMdaSortingExtractor.write_sorting(sorting=sorting, save_path=self.firings_out)
+            sf.SFMdaSortingExtractor.write_sorting(
+                sorting=sorting, save_path=self.firings_out)
 
             # not sure why this is not working
             # I was trying to use spikeforestsorters so that we could swap other sorters in
@@ -238,23 +260,28 @@ class CustomSorting(mlpr.Processor):
             _cluster_metrics(pre, self.firings_out, cluster_metrics_path)
 
             print('Computing isolation metrics...')
-            isolation_metrics_path = tmpdir +'/isolation_metrics.json'
+            isolation_metrics_path = tmpdir + '/isolation_metrics.json'
             pair_metrics_path = tmpdir + '/pair_metrics.json'
-            _isolation_metrics(pre, self.firings_out, isolation_metrics_path, pair_metrics_path)
+            _isolation_metrics(pre, self.firings_out,
+                               isolation_metrics_path, pair_metrics_path)
 
             print('Combining metrics...')
             metrics_path = tmpdir + '/metrics.json'
-            _combine_metrics(cluster_metrics_path, isolation_metrics_path, metrics_path)
+            _combine_metrics(cluster_metrics_path,
+                             isolation_metrics_path, metrics_path)
 
             # copy metrics.json to the output location
             shutil.copy(metrics_path, self.metrics_out)
 
             print('Creating label map...')
             label_map_path = tmpdir + '/label_map.mda'
-            create_label_map(metrics=metrics_path, label_map_out=label_map_path)
+            create_label_map(metrics=metrics_path,
+                             label_map_out=label_map_path)
 
             print('Applying label map...')
-            apply_label_map(firings=self.firings_out, label_map=label_map_path, firings_out=self.firings_curated_out)
+            apply_label_map(firings=self.firings_out, label_map=label_map_path,
+                            firings_out=self.firings_curated_out)
+
 
 def spike_sorting(*, recording_file_in, geom_in, firings_out, metrics_out, firings_curated_out, args):
     params = dict(
@@ -275,6 +302,7 @@ def spike_sorting(*, recording_file_in, geom_in, firings_out, metrics_out, firin
         params['geom_in'] = geom_in
     CustomSorting.execute(**params)
 
+
 def _bandpass_filter(timeseries_in, timeseries_out):
     code = '''
     #!/bin/bash
@@ -287,6 +315,7 @@ def _bandpass_filter(timeseries_in, timeseries_out):
     if retcode != 0:
         raise Exception('problem running ms3.bandpass_filter')
 
+
 def _whiten(timeseries_in, timeseries_out):
     code = '''
     #!/bin/bash
@@ -296,8 +325,9 @@ def _whiten(timeseries_in, timeseries_out):
     script = ShellScript(code)
     script.start()
     retcode = script.wait()
-    if retcode !=0:
+    if retcode != 0:
         raise Exception('problem running ms3.whiten')
+
 
 def _mask_out_artifacts(timeseries_in, timeseries_out):
     code = '''
@@ -311,6 +341,7 @@ def _mask_out_artifacts(timeseries_in, timeseries_out):
     if retcode != 0:
         raise Exception('problem running ms3.mask_out_artifacts')
 
+
 def _cluster_metrics(timeseries, firings, metrics_out):
     code = '''
     #!/bin/bash
@@ -322,6 +353,7 @@ def _cluster_metrics(timeseries, firings, metrics_out):
     retcode = script.wait()
     if retcode != 0:
         raise Exception('problem running ms3.cluster_metrics')
+
 
 def _isolation_metrics(timeseries, firings, metrics_out, pair_metrics_out):
     code = '''
@@ -335,6 +367,7 @@ def _isolation_metrics(timeseries, firings, metrics_out, pair_metrics_out):
     if retcode != 0:
         raise Exception('problem running ms3.isolation_metrics')
 
+
 def _combine_metrics(metrics1, metrics2, metrics_out):
     code = '''
     #!/bin/bash
@@ -346,6 +379,7 @@ def _combine_metrics(metrics1, metrics2, metrics_out):
     retcode = script.wait()
     if retcode != 0:
         raise Exception('problem running ms3.combine_metrics')
+
 
 if __name__ == '__main__':
     main()

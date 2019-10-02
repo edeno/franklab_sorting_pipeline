@@ -154,14 +154,18 @@ class CustomSorting(mlpr.Processor):
     # parameters
     samplerate = mlpr.FloatParameter("Sampling frequency")
 
-    mask_out_artifacts = mlpr.BoolParameter(optional=True, default=False,
-                                            description='Whether to mask out artifacts')
+    mask_out_artifacts = mlpr.BoolParameter(
+        optional=True, default=False,
+        description='Whether to mask out artifacts')
     freq_min = mlpr.FloatParameter(
-        optional=True, default=300, description='Use 0 for no bandpass filtering')
+        optional=True, default=300,
+        description='Use 0 for no bandpass filtering')
     freq_max = mlpr.FloatParameter(
-        optional=True, default=6000, description='Use 0 for no bandpass filtering')
-    whiten = mlpr.BoolParameter(optional=True, default=True,
-                                description='Whether to do channel whitening as part of preprocessing')
+        optional=True, default=6000,
+        description='Use 0 for no bandpass filtering')
+    whiten = mlpr.BoolParameter(
+        optional=True, default=True,
+        description='Whether to do channel whitening as part of preprocessing')
     detect_sign = mlpr.IntegerParameter(
         'Use -1, 0, or 1, depending on the sign of the spikes in the recording')
     adjacency_radius = mlpr.FloatParameter(
@@ -239,21 +243,6 @@ class CustomSorting(mlpr.Processor):
             print('Writing firings.mda...')
             sf.SFMdaSortingExtractor.write_sorting(
                 sorting=sorting, save_path=self.firings_out)
-
-            # not sure why this is not working
-            # I was trying to use spikeforestsorters so that we could swap other sorters in
-            # but ran into some unexpected problems
-            # result = sorters.MountainSort4.execute(
-            #     recording_dir=recording_dir,
-            #     firings_out=self.firings_out,
-            #     detect_sign=self.detect_sign,
-            #     adjacency_radius=self.adjacency_radius,
-            #     clip_size=self.clip_size,
-            #     detect_threshold=self.detect_threshold,
-            #     detect_interval=self.detect_interval,
-            #     num_workers=num_workers,
-            #     _use_cache=False
-            # )
 
             print('Computing cluster metrics...')
             cluster_metrics_path = tmpdir + '/cluster_metrics.json'

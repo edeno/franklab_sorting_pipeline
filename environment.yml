@@ -3,7 +3,7 @@ channels:
 - conda-forge
 - flatiron
 - defaults
-- edeno
+- franklab
 dependencies:
 - ml_ms3
 - qt-mountainview
